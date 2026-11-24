@@ -62,7 +62,10 @@ for (const name of readdirSync(join(root, 'packages')).sort()) {
       flags = ['-std=c11', '-O2', '-Wall', '-Wextra', '-Werror', '-fPIC', '-fvisibility=hidden', '-DNAPI_VERSION=8', '-I', headers]
       if (process.platform === 'darwin') {
         if (binary.libc !== undefined) throw new Error('build: macOS flock does not select a Linux libc')
-        flags.push('-bundle', '-undefined', 'dynamic_lookup', '-mmacosx-version-min=11.0')
+        // A compiler's default target follows the architecture it runs as, so an
+        // x86_64 cc writes an Intel slice into packages/darwin-arm64 and the
+        // runtime rejects it at dlopen. Pin the slice to the host arch instead.
+        flags.push('-bundle', '-undefined', 'dynamic_lookup', '-mmacosx-version-min=11.0', '-arch', process.arch === 'x64' ? 'x86_64' : 'arm64')
       } else {
         if (binary.libc !== 'glibc' && binary.libc !== 'musl') {
           throw new Error('build: Linux flock must select glibc or musl')
